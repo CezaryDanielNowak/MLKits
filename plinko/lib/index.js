@@ -39,7 +39,8 @@ const render = Render.create({
     width: CANVAS_WIDTH,
     height: CANVAS_HEIGHT,
     wireframes: false,
-    background: '#f1f1f1'
+    background: '#f1f1f1',
+    pixelRatio: window.devicePixelRatio,
   }
 });
 
