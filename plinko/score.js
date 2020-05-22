@@ -36,7 +36,7 @@ function runAnalysis() {
 
   _.range(-1, 20).forEach((k) => {
     const accuracy = _.chain(testSet)
-      .filter(testPoint => knn(trainingSet, testPoint[0], k) === testPoint[3])
+      .filter(testPoint => knn(trainingSet, _.initial(testPoint), k) === testPoint[3])
       .size()
       .divide(testSize)
       .value();
@@ -50,7 +50,12 @@ function knn(data, point, k = -1) {
   let meaningfullChoices;
 
 	const choices = _.chain(data)
-  	.map((row) => [distance(row[ROW_DROP_POSITION], point), row[ROW_BUCKET_LABEL]])
+  	.map((row) => {
+      return [
+        distance(_.initial(row), point),
+        _.last(row)
+      ];
+    })
   	.sortBy(row => row[0]);
 
   if (k === -1) { // -1 === auto
@@ -71,7 +76,11 @@ function knn(data, point, k = -1) {
 }
 
 function distance(pointA, pointB) {
-	return Math.abs(pointA - pointB);
+  return _.chain(pointA)
+    .zip(pointB)
+    .map(([a, b]) => (a - b) ** 2)
+    .sum()
+    .value() ** 0.5;
 }
 
 function splitDataset(data, testCount) {
