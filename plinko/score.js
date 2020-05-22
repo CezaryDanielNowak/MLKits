@@ -28,13 +28,12 @@ function getMeaningfullChoices(inputLodashChainArr, minK) {
 }
 
 function runAnalysis() {
-
   const testSize = 100;
-  const [testSet, trainingSet] = splitDataset(outputs, testSize);
+  const [testSet, trainingSet] = splitDataset(minMax(outputs), testSize);
 
   console.log('testSet, trainingSet', testSet, trainingSet)
 
-  _.range(-1, 20).forEach((k) => {
+  _.range(0, 20).forEach((k) => {
     const accuracy = _.chain(testSet)
       .filter(testPoint => knn(trainingSet, _.initial(testPoint), k) === testPoint[3])
       .size()
@@ -46,7 +45,7 @@ function runAnalysis() {
 
 }
 
-function knn(data, point, k = -1) {
+function knn(data, point, k = 0) {
   let meaningfullChoices;
 
 	const choices = _.chain(data)
@@ -58,7 +57,7 @@ function knn(data, point, k = -1) {
     })
   	.sortBy(row => row[0]);
 
-  if (k === -1) { // -1 === auto
+  if (k === 0) { // 0 === auto
 	  meaningfullChoices = getMeaningfullChoices(choices, 3);
 	} else {
     meaningfullChoices = choices.slice(0, k);
@@ -95,4 +94,22 @@ function splitDataset(data, testCount) {
   const trainingSet = _.slice(shuffled, testCount);
 
   return [testSet, trainingSet];
+}
+
+function minMax(data, featureCount = _.first(data).length - 1) {
+  const clonedData = _.cloneDeep(data);
+
+  for (let i = 0; i < featureCount; ++i) {
+    const column = clonedData.map((row) => row[i]);
+
+    const min = _.min(column);
+    const max = _.max(column);
+    const divider = max - min || 0.00000001; // don't divide by 0
+
+    for (let j = 0; j < clonedData.length; ++j) {
+      clonedData[j][i] = (clonedData[j][i] - min) / divider;
+    }
+  }
+
+  return clonedData;
 }
