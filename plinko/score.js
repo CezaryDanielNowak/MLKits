@@ -1,8 +1,89 @@
+const outputs = [];
+
 function onScoreUpdate(dropPosition, bounciness, size, bucketLabel) {
-  // Ran every time a balls drops into a bucket
+  outputs.push([dropPosition, bounciness, size, bucketLabel]);
+}
+
+const ROW_DROP_POSITION = 0;
+const ROW_BOUCINESS = 1;
+const ROW_SIZE = 2;
+const ROW_BUCKET_LABEL = 3;
+
+const k = 3; // k as for K-Nearest neighbors
+const predictionPoint = 300;
+
+function getMeaningfullChoices(inputLodashChainArr, minK) {
+	let edgeElement = null;
+
+	return inputLodashChainArr.takeWhile(([ drop_position ], i) => {
+		if (i + 1 === minK) {
+			edgeElement = drop_position;
+			return true;
+		} else if (i < minK) {
+			return true;
+		} else {
+			return drop_position === edgeElement;
+		}
+	});
 }
 
 function runAnalysis() {
-  // Write code here to analyze stuff
+
+  const testSize = 100;
+  const [testSet, trainingSet] = splitDataset(outputs, testSize);
+
+  console.log('testSet, trainingSet', testSet, trainingSet)
+
+  _.range(-1, 20).forEach((k) => {
+    const accuracy = _.chain(testSet)
+      .filter(testPoint => knn(trainingSet, testPoint[0], k) === testPoint[3])
+      .size()
+      .divide(testSize)
+      .value();
+
+    console.log(`accuracy for k=${k} is ${accuracy}`);
+  });
+
 }
 
+function knn(data, point, k = -1) {
+  let meaningfullChoices;
+
+	const choices = _.chain(data)
+  	.map((row) => [distance(row[ROW_DROP_POSITION], point), row[ROW_BUCKET_LABEL]])
+  	.sortBy(row => row[0]);
+
+  if (k === -1) { // -1 === auto
+	  meaningfullChoices = getMeaningfullChoices(choices, 3);
+	} else {
+    meaningfullChoices = choices.slice(0, k);
+	}
+
+  return meaningfullChoices
+  	.countBy(row => row[1])
+  	.toPairs()
+  	.sortBy(row => row[1])
+  	.last()
+  	.first()
+  	.parseInt()
+  	.value();
+
+}
+
+function distance(pointA, pointB) {
+	return Math.abs(pointA - pointB);
+}
+
+function splitDataset(data, testCount) {
+  if (data.length <= testCount) {
+    alert('No enough data to perform test!');
+    return [[], []];
+  }
+
+  const shuffled = _.shuffle(data);
+
+  const testSet = _.slice(shuffled, 0, testCount);
+  const trainingSet = _.slice(shuffled, testCount);
+
+  return [testSet, trainingSet];
+}
