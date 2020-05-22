@@ -29,18 +29,20 @@ function getMeaningfullChoices(inputLodashChainArr, minK) {
 
 function runAnalysis() {
   const testSize = 100;
-  const [testSet, trainingSet] = splitDataset(minMax(outputs), testSize);
 
-  console.log('testSet, trainingSet', testSet, trainingSet)
 
-  _.range(0, 20).forEach((k) => {
+  _.range(0, 3).forEach((feature) => {
+    const data = _.map(outputs, (row) => [row[feature], _.last(row)]);
+
+    const [testSet, trainingSet] = splitDataset(minMax(data), testSize);
+
     const accuracy = _.chain(testSet)
-      .filter(testPoint => knn(trainingSet, _.initial(testPoint), k) === testPoint[3])
+      .filter(testPoint => knn(trainingSet, _.initial(testPoint), 10) === _.last(testPoint))
       .size()
       .divide(testSize)
       .value();
 
-    console.log(`accuracy for k=${k} is ${accuracy}`);
+    console.log(`accuracy for feature=${feature} is ${accuracy}`);
   });
 
 }
