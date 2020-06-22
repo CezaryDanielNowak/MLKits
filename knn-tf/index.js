@@ -1,0 +1,57 @@
+require('@tensorflow/tfjs-node');
+const tf = require('@tensorflow/tfjs');
+
+const loadCSV = require('./load-csv');
+
+
+let {
+  features,
+  labels,
+  testFeatures,
+  testLabels
+} = loadCSV('kc_house_data.csv', {
+  shuffle: true,
+  splitTest: 10,
+  dataColumns: ['lat', 'long', 'sqft_living'],
+  labelColumns: ['price']
+});
+
+features = tf.tensor(features);
+labels = tf.tensor(labels);
+
+testFeatures.forEach((testPoint, i) => {
+  const result = knn(features, labels, tf.tensor(testPoint), 10);
+  const err = (testLabels[i][0] - result) / testLabels[i][0];
+
+  console.log('Error', (err * 100).toFixed(2).padStart(7, ' '), '%');
+});
+
+
+
+function knn(features, labels, predictionPoint, k) {
+  const { mean, variance } = tf.moments(features, 0);
+
+  const scaledPrediction = predictionPoint
+    .sub(mean)
+    .div(variance.sqrt());
+
+  const distances = features
+    .sub(mean)
+    .div(variance.sqrt())
+    .sub(scaledPrediction)
+    .pow(2)
+    .sum(1)
+    .sqrt(); // .pow(.5 )
+
+  const sortedDistancesAndLabels = distances
+    .expandDims(1)
+    .concat(labels, 1)
+    .arraySync()
+    .sort((a, b) => {
+      return a[0] > b[0] ? 1 : -1;
+    })
+    .slice(0, k);
+
+  return sortedDistancesAndLabels
+    .reduce((acc, data) => data[1], 0);
+}
